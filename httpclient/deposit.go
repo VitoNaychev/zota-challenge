@@ -12,12 +12,22 @@ type HttpClient interface {
 }
 
 type DepositClient struct {
-	Client HttpClient
+	url         string
+	contentType string
+	client      HttpClient
 }
 
-func (d *DepositClient) Deposit(url, contentType, orderID string) {
+func NewDepositClient(url, contentType string, client HttpClient) *DepositClient {
+	return &DepositClient{
+		url:         url,
+		contentType: contentType,
+		client:      client,
+	}
+}
+
+func (d *DepositClient) Deposit(orderID string) {
 	body := bytes.NewBuffer([]byte{})
 	json.NewEncoder(body).Encode(orderID)
 
-	d.Client.Post(url, contentType, body)
+	d.client.Post(d.url, d.contentType, body)
 }

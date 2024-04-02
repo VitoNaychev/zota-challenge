@@ -26,21 +26,22 @@ func (s *StubHttpClient) Post(url string, contentType string, data io.Reader) (*
 
 func TestDeposit(t *testing.T) {
 	t.Run("sends request to URL", func(t *testing.T) {
-		httpClient := &StubHttpClient{}
-		depositClient := httpclient.DepositClient{httpClient}
-
 		url := "test-url.com"
 		contentType := "application/json"
-		orderID := "abcdef"
 
-		depositClient.Deposit(url, contentType, orderID)
+		httpClient := &StubHttpClient{}
+		depositClient := httpclient.NewDepositClient(url, contentType, httpClient)
+
+		wantOrderID := "abcdef"
+
+		depositClient.Deposit(wantOrderID)
 
 		AssertEqual(t, httpClient.url, url)
 		AssertEqual(t, httpClient.contentType, contentType)
 
 		var gotOrderID string
 		json.NewDecoder(httpClient.data).Decode(&gotOrderID)
-		AssertEqual(t, gotOrderID, orderID)
+		AssertEqual(t, gotOrderID, wantOrderID)
 
 	})
 }
