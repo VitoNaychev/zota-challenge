@@ -43,12 +43,24 @@ func NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, check
 	}
 }
 
-func (d *DepositClient) Deposit(order domain.Order, customer domain.Customer) {
+func (d *DepositClient) Deposit(order domain.Order, customer domain.Customer) (DepositResponseData, error) {
 	signature := crypto.SignDeposit(d.endpoint, order.ID, order.Amount, customer.Email, d.secret)
 	depositRequest := NewDepositRequest(order, customer, d.redirectURL, fmt.Sprintf("%s?uid=%d", d.checkoutURL, order.ID), signature)
 
 	body := bytes.NewBuffer([]byte{})
 	json.NewEncoder(body).Encode(depositRequest)
 
-	d.client.Post(d.baseURL, d.contentType, body)
+	response, _ := d.client.Post(d.baseURL, d.contentType, body)
+
+	if response.StatusCode != 200 {
+		var depositErrorRespone DepositErrorResponse
+		json.NewDecoder(response.Body).Decode(&depositErrorRespone)
+
+		return DepositResponseData{}, NewDepositError(depositErrorRespone.Message)
+	}
+
+	var depositSuccessResponse DepositSuccessResponse
+	json.NewDecoder(response.Body).Decode(&depositSuccessResponse)
+
+	return depositSuccessResponse.Data, nil
 }

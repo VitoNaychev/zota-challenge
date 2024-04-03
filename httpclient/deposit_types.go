@@ -2,6 +2,34 @@ package httpclient
 
 import "github.com/VitoNaychev/zota-challenge/domain"
 
+type DepositError struct {
+	msg string
+}
+
+func NewDepositError(msg string) *DepositError {
+	return &DepositError{msg}
+}
+
+func (d *DepositError) Error() string {
+	return d.msg
+}
+
+type DepositSuccessResponse struct {
+	Code int                 `json:"code"`
+	Data DepositResponseData `json:"data"`
+}
+
+type DepositResponseData struct {
+	DepositURL      string `json:"depositURL"`
+	MerchantOrderID int    `json:"merchantOrderID"`
+	OrderID         string `json:"orderID"`
+}
+
+type DepositErrorResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 type DepositRequest struct {
 	MerchantOrderID          int
 	MerchantOrderDescription string

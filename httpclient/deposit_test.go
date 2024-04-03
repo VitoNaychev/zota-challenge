@@ -1,7 +1,9 @@
 package httpclient_test
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -51,10 +53,29 @@ var testRequest = httpclient.DepositRequest{
 	CheckoutURL:              "https://www.example-merchant.com/account/deposit/?uid=12",
 }
 
+var testResponseData = httpclient.DepositResponseData{
+	DepositURL:      "https://api.zotapay.com/api/v1/deposit/init/8b3a6b89697e8ac8f45d964bcc90c7ba41764acd/",
+	MerchantOrderID: 12,
+	OrderID:         "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd",
+}
+
+var testSuccessResponse = httpclient.DepositSuccessResponse{
+	Code: 200,
+	Data: testResponseData,
+}
+
+var testErrorResponse = httpclient.DepositErrorResponse{
+	Code:    400,
+	Message: "endpoint currency mismatch",
+}
+
 type StubHttpClient struct {
 	url         string
 	contentType string
 	data        io.Reader
+
+	code     int
+	response interface{}
 }
 
 func (s *StubHttpClient) Post(url string, contentType string, data io.Reader) (*http.Response, error) {
@@ -62,7 +83,16 @@ func (s *StubHttpClient) Post(url string, contentType string, data io.Reader) (*
 	s.contentType = contentType
 	s.data = data
 
-	return nil, nil
+	response := &http.Response{}
+
+	body := bytes.NewBuffer([]byte{})
+	json.NewEncoder(body).Encode(s.response)
+
+	response.StatusCode = s.code
+	response.Body = io.NopCloser(body)
+
+	return response, nil
+
 }
 
 func TestDeposit(t *testing.T) {
@@ -78,7 +108,10 @@ func TestDeposit(t *testing.T) {
 	checkoutURL := os.Getenv("CHECKOUT_URL")
 
 	t.Run("signs request", func(t *testing.T) {
-		httpClient := &StubHttpClient{}
+		httpClient := &StubHttpClient{
+			code:     testSuccessResponse.Code,
+			response: testSuccessResponse,
+		}
 		depositClient := httpclient.NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		depositClient.Deposit(testOrder, testCustomer)
@@ -90,8 +123,11 @@ func TestDeposit(t *testing.T) {
 		AssertEqual(t, gotRequest.Signature, signature)
 	})
 
-	t.Run("sends request to URL", func(t *testing.T) {
-		httpClient := &StubHttpClient{}
+	t.Run("sends request", func(t *testing.T) {
+		httpClient := &StubHttpClient{
+			code:     testSuccessResponse.Code,
+			response: testSuccessResponse,
+		}
 		depositClient := httpclient.NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		depositClient.Deposit(testOrder, testCustomer)
@@ -108,6 +144,32 @@ func TestDeposit(t *testing.T) {
 		AssertEqual(t, gotRequest, testRequest)
 	})
 
+	t.Run("returns response data on success", func(t *testing.T) {
+		httpClient := &StubHttpClient{
+			code:     testSuccessResponse.Code,
+			response: testSuccessResponse,
+		}
+		depositClient := httpclient.NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+
+		gotResponseData, _ := depositClient.Deposit(testOrder, testCustomer)
+
+		AssertEqual(t, gotResponseData, testResponseData)
+	})
+
+	t.Run("returns error on failure", func(t *testing.T) {
+		httpClient := &StubHttpClient{
+			code:     testErrorResponse.Code,
+			response: testErrorResponse,
+		}
+		depositClient := httpclient.NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+
+		wantErr := &httpclient.DepositError{}
+		_, gotErr := depositClient.Deposit(testOrder, testCustomer)
+
+		if !errors.As(gotErr, &wantErr) {
+			t.Errorf("got error with type %v want %v", reflect.TypeOf(gotErr), reflect.TypeOf(wantErr))
+		}
+	})
 }
 
 func AssertEqual[T any](t testing.TB, got, want T) {
