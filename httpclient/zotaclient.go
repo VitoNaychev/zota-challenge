@@ -69,13 +69,15 @@ func (z *ZotaClient) Deposit(order domain.Order, customer domain.Customer) (Depo
 }
 
 func (z *ZotaClient) OrderStatus(orderID, merchantOrderID string) {
+	signature := crypto.SignOrderStatus(z.config.MerchantID, merchantOrderID, orderID, time.Now().Unix(), z.config.Secret)
+
 	params := url.Values{}
 
 	params.Set("merchantID", z.config.MerchantID)
 	params.Set("orderID", orderID)
 	params.Set("merchantOrderID", merchantOrderID)
 	params.Set("timestamp", fmt.Sprint(time.Now().Unix()))
-	params.Set("signature", "labadabadaba")
+	params.Set("signature", signature)
 
 	urlWithParams := fmt.Sprintf("%s%s?%s", z.config.BaseURL, ORDER_STATUS_URL, params.Encode())
 	z.client.Get(urlWithParams)

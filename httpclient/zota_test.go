@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/VitoNaychev/zota-challenge/crypto"
@@ -228,6 +229,35 @@ func TestOrderStatus(t *testing.T) {
 		AssertEqual(t, queryParams.Get("merchantOrderID"), merchantOrderID)
 		AssertEqual(t, queryParams.Has("timestamp"), true)
 		AssertEqual(t, queryParams.Has("signature"), true)
+	})
+
+	t.Run("signs request", func(t *testing.T) {
+		merchantOrderID := "QvE8dZshpKhaOmHY"
+		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+
+		httpClient := &StubHttpClient{
+			code:     testSuccessResponse.Code,
+			response: testSuccessResponse,
+		}
+		depositClient := httpclient.NewZotaClient(config, httpClient)
+
+		depositClient.OrderStatus(orderID, merchantOrderID)
+
+		parsedURL, err := url.Parse(httpClient.url)
+		if err != nil {
+			t.Fatalf("got error %v", err)
+		}
+
+		queryParams := parsedURL.Query()
+		timestamp, err := strconv.ParseInt(queryParams.Get("timestamp"), 10, 64)
+		if err != nil {
+			t.Fatalf("got error %v", err)
+		}
+
+		wantSignature := crypto.SignOrderStatus(config.MerchantID, merchantOrderID, orderID, timestamp, config.Secret)
+		gotSignature := queryParams.Get("signature")
+
+		AssertEqual(t, gotSignature, wantSignature)
 	})
 }
 
