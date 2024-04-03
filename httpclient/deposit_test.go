@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"reflect"
 	"testing"
@@ -95,9 +96,15 @@ func (s *StubHttpClient) Post(url string, contentType string, data io.Reader) (*
 
 }
 
+func (s *StubHttpClient) Get(url string) (*http.Response, error) {
+	s.url = url
+	return nil, nil
+}
+
 func TestDeposit(t *testing.T) {
 	godotenv.Load("../test.env")
 
+	merchantID := os.Getenv("MERCHANT_ID")
 	secret := os.Getenv("API_SECRET_KEY")
 	endpoint := os.Getenv("ENDPOINT_ID")
 
@@ -112,7 +119,7 @@ func TestDeposit(t *testing.T) {
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
 		}
-		depositClient := httpclient.NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		depositClient.Deposit(testOrder, testCustomer)
 
@@ -128,7 +135,7 @@ func TestDeposit(t *testing.T) {
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
 		}
-		depositClient := httpclient.NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		depositClient.Deposit(testOrder, testCustomer)
 
@@ -151,7 +158,7 @@ func TestDeposit(t *testing.T) {
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
 		}
-		depositClient := httpclient.NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		gotResponseData, _ := depositClient.Deposit(testOrder, testCustomer)
 
@@ -163,7 +170,7 @@ func TestDeposit(t *testing.T) {
 			code:     testErrorResponse.Code,
 			response: testErrorResponse,
 		}
-		depositClient := httpclient.NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		wantErr := &httpclient.DepositError{}
 		_, gotErr := depositClient.Deposit(testOrder, testCustomer)
@@ -171,6 +178,47 @@ func TestDeposit(t *testing.T) {
 		if !errors.As(gotErr, &wantErr) {
 			t.Errorf("got error with type %v want %v", reflect.TypeOf(gotErr), reflect.TypeOf(wantErr))
 		}
+	})
+}
+
+func TestOrderStatus(t *testing.T) {
+	godotenv.Load("../test.env")
+
+	merchantID := os.Getenv("MERCHANT_ID")
+	secret := os.Getenv("API_SECRET_KEY")
+	endpoint := os.Getenv("ENDPOINT_ID")
+
+	baseURL := os.Getenv("BASE_URL")
+	contentType := os.Getenv("CONTENT_TYPE")
+
+	redirectURL := os.Getenv("REDIRECT_URL")
+	checkoutURL := os.Getenv("CHECKOUT_URL")
+
+	t.Run("sets query parameters", func(t *testing.T) {
+		merchantOrderID := "QvE8dZshpKhaOmHY"
+		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+
+		httpClient := &StubHttpClient{
+			code:     testSuccessResponse.Code,
+			response: testSuccessResponse,
+		}
+		depositClient := httpclient.NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+
+		depositClient.OrderStatus(orderID, merchantOrderID)
+
+		parsedURL, err := url.Parse(httpClient.url)
+		if err != nil {
+			t.Fatalf("got error %v", err)
+		}
+
+		queryParams := parsedURL.Query()
+
+		AssertEqual(t, queryParams.Get("merchantID"), merchantID)
+		AssertEqual(t, queryParams.Get("orderID"), orderID)
+		AssertEqual(t, queryParams.Get("merchantOrderID"), merchantOrderID)
+		AssertEqual(t, queryParams.Has("timestamp"), true)
+		AssertEqual(t, queryParams.Has("signature"), true)
+
 	})
 }
 

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"time"
 
 	"github.com/VitoNaychev/zota-challenge/crypto"
 	"github.com/VitoNaychev/zota-challenge/domain"
@@ -13,11 +15,13 @@ import (
 
 type HttpClient interface {
 	Post(string, string, io.Reader) (*http.Response, error)
+	Get(string) (*http.Response, error)
 }
 
 type DepositClient struct {
-	secret   string
-	endpoint string
+	merchantID string
+	secret     string
+	endpoint   string
 
 	baseURL     string
 	contentType string
@@ -28,10 +32,11 @@ type DepositClient struct {
 	client HttpClient
 }
 
-func NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, checkoutURL string, client HttpClient) *DepositClient {
+func NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL string, client HttpClient) *DepositClient {
 	return &DepositClient{
-		secret:   secret,
-		endpoint: endpoint,
+		merchantID: merchantID,
+		secret:     secret,
+		endpoint:   endpoint,
 
 		baseURL:     baseURL,
 		contentType: contentType,
@@ -65,6 +70,15 @@ func (d *DepositClient) Deposit(order domain.Order, customer domain.Customer) (D
 	return depositSuccessResponse.Data, nil
 }
 
-func (d *DepositClient) OrderStatus(orderID string, merchantOrderID int) {
+func (d *DepositClient) OrderStatus(orderID, merchantOrderID string) {
+	params := url.Values{}
 
+	params.Set("merchantID", d.merchantID)
+	params.Set("orderID", orderID)
+	params.Set("merchantOrderID", merchantOrderID)
+	params.Set("timestamp", fmt.Sprint(time.Now().Unix()))
+	params.Set("signature", "labadabadaba")
+
+	urlWithParams := fmt.Sprintf("%s?%s", d.baseURL, params.Encode())
+	d.client.Get(urlWithParams)
 }
