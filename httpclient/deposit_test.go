@@ -101,6 +101,10 @@ func TestDeposit(t *testing.T) {
 
 		var gotRequest httpclient.DepositRequest
 		json.NewDecoder(httpClient.data).Decode(&gotRequest)
+
+		signature := crypto.SignDeposit(endpoint, testOrder.ID, testOrder.Amount, testCustomer.Email, secret)
+		testRequest.Signature = signature
+
 		AssertEqual(t, gotRequest, testRequest)
 	})
 
