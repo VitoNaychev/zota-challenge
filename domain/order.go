@@ -1,7 +1,7 @@
 package domain
 
 type Order struct {
-	ID          int
+	ID          string
 	Description string
 	Amount      float64
 	Currency    string
