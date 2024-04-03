@@ -13,6 +13,9 @@ import (
 	"github.com/VitoNaychev/zota-challenge/domain"
 )
 
+var DEPOSIT_URL = "/api/v1/deposit/request/"
+var ORDER_STATUS_URL = "/api/v1/query/order-status/"
+
 type HttpClient interface {
 	Post(string, string, io.Reader) (*http.Response, error)
 	Get(string) (*http.Response, error)
@@ -55,7 +58,7 @@ func (z *ZotaClient) Deposit(order domain.Order, customer domain.Customer) (Depo
 	body := bytes.NewBuffer([]byte{})
 	json.NewEncoder(body).Encode(depositRequest)
 
-	response, _ := z.client.Post(z.baseURL, z.contentType, body)
+	response, _ := z.client.Post(z.baseURL+DEPOSIT_URL+z.endpoint, z.contentType, body)
 
 	if response.StatusCode != 200 {
 		var depositErrorRespone DepositErrorResponse
@@ -79,6 +82,6 @@ func (z *ZotaClient) OrderStatus(orderID, merchantOrderID string) {
 	params.Set("timestamp", fmt.Sprint(time.Now().Unix()))
 	params.Set("signature", "labadabadaba")
 
-	urlWithParams := fmt.Sprintf("%s?%s", z.baseURL, params.Encode())
+	urlWithParams := fmt.Sprintf("%s%s?%s", z.baseURL, ORDER_STATUS_URL, params.Encode())
 	z.client.Get(urlWithParams)
 }

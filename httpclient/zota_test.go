@@ -131,6 +131,8 @@ func TestDeposit(t *testing.T) {
 	})
 
 	t.Run("sends request", func(t *testing.T) {
+		depositURLPath := "/api/v1/deposit/request/" + endpoint
+
 		httpClient := &StubHttpClient{
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
@@ -139,7 +141,7 @@ func TestDeposit(t *testing.T) {
 
 		depositClient.Deposit(testOrder, testCustomer)
 
-		AssertEqual(t, httpClient.url, baseURL)
+		AssertEqual(t, httpClient.url, baseURL+depositURLPath)
 		AssertEqual(t, httpClient.contentType, contentType)
 
 		var gotRequest httpclient.DepositRequest
@@ -195,6 +197,8 @@ func TestOrderStatus(t *testing.T) {
 	checkoutURL := os.Getenv("CHECKOUT_URL")
 
 	t.Run("sets query parameters", func(t *testing.T) {
+		orderStatusURLPath := "/api/v1/query/order-status/"
+
 		merchantOrderID := "QvE8dZshpKhaOmHY"
 		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
 
@@ -211,6 +215,8 @@ func TestOrderStatus(t *testing.T) {
 			t.Fatalf("got error %v", err)
 		}
 
+		AssertEqual(t, parsedURL.Path, baseURL+orderStatusURLPath)
+
 		queryParams := parsedURL.Query()
 
 		AssertEqual(t, queryParams.Get("merchantID"), merchantID)
@@ -218,7 +224,6 @@ func TestOrderStatus(t *testing.T) {
 		AssertEqual(t, queryParams.Get("merchantOrderID"), merchantOrderID)
 		AssertEqual(t, queryParams.Has("timestamp"), true)
 		AssertEqual(t, queryParams.Has("signature"), true)
-
 	})
 }
 
