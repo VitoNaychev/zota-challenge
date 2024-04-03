@@ -17,7 +17,7 @@ import (
 )
 
 var testOrder = domain.Order{
-	ID:          12,
+	ID:          "QvE8dZshpKhaOmHY",
 	Description: "Test order",
 	Amount:      500.00,
 	Currency:    "USD",
@@ -36,7 +36,7 @@ var testCustomer = domain.Customer{
 }
 
 var testRequest = httpclient.DepositRequest{
-	MerchantOrderID:          12,
+	MerchantOrderID:          "QvE8dZshpKhaOmHY",
 	MerchantOrderDescription: "Test order",
 	OrderAmount:              500.00,
 	OrderCurrency:            "USD",
@@ -50,7 +50,7 @@ var testRequest = httpclient.DepositRequest{
 	CustomerPhone:            "+66-77999110",
 	CustomerIP:               "103.106.8.104",
 	RedirectURL:              "https://www.example-merchant.com/payment-return/",
-	CheckoutURL:              "https://www.example-merchant.com/account/deposit/?uid=12",
+	CheckoutURL:              "https://www.example-merchant.com/account/deposit/?uid=QvE8dZshpKhaOmHY",
 }
 
 var testResponseData = httpclient.DepositResponseData{
@@ -144,7 +144,9 @@ func TestDeposit(t *testing.T) {
 		AssertEqual(t, gotRequest, testRequest)
 	})
 
-	t.Run("returns response data on success", func(t *testing.T) {
+	t.Run("returns error on failure to send request", func(t *testing.T) {})
+
+	t.Run("returns response data on successful request", func(t *testing.T) {
 		httpClient := &StubHttpClient{
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
@@ -156,7 +158,7 @@ func TestDeposit(t *testing.T) {
 		AssertEqual(t, gotResponseData, testResponseData)
 	})
 
-	t.Run("returns error on failure", func(t *testing.T) {
+	t.Run("returns error on unsuccessful request", func(t *testing.T) {
 		httpClient := &StubHttpClient{
 			code:     testErrorResponse.Code,
 			response: testErrorResponse,

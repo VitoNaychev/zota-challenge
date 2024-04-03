@@ -45,7 +45,7 @@ func NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, check
 
 func (d *DepositClient) Deposit(order domain.Order, customer domain.Customer) (DepositResponseData, error) {
 	signature := crypto.SignDeposit(d.endpoint, order.ID, order.Amount, customer.Email, d.secret)
-	depositRequest := NewDepositRequest(order, customer, d.redirectURL, fmt.Sprintf("%s?uid=%d", d.checkoutURL, order.ID), signature)
+	depositRequest := NewDepositRequest(order, customer, d.redirectURL, fmt.Sprintf("%s?uid=%s", d.checkoutURL, order.ID), signature)
 
 	body := bytes.NewBuffer([]byte{})
 	json.NewEncoder(body).Encode(depositRequest)
@@ -63,4 +63,8 @@ func (d *DepositClient) Deposit(order domain.Order, customer domain.Customer) (D
 	json.NewDecoder(response.Body).Decode(&depositSuccessResponse)
 
 	return depositSuccessResponse.Data, nil
+}
+
+func (d *DepositClient) OrderStatus(orderID string, merchantOrderID int) {
+
 }

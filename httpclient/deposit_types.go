@@ -31,7 +31,7 @@ type DepositErrorResponse struct {
 }
 
 type DepositRequest struct {
-	MerchantOrderID          int
+	MerchantOrderID          string
 	MerchantOrderDescription string
 	OrderAmount              float64
 	OrderCurrency            string
