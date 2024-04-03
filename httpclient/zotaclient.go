@@ -18,7 +18,7 @@ type HttpClient interface {
 	Get(string) (*http.Response, error)
 }
 
-type DepositClient struct {
+type ZotaClient struct {
 	merchantID string
 	secret     string
 	endpoint   string
@@ -32,8 +32,8 @@ type DepositClient struct {
 	client HttpClient
 }
 
-func NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL string, client HttpClient) *DepositClient {
-	return &DepositClient{
+func NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL string, client HttpClient) *ZotaClient {
+	return &ZotaClient{
 		merchantID: merchantID,
 		secret:     secret,
 		endpoint:   endpoint,
@@ -48,14 +48,14 @@ func NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redire
 	}
 }
 
-func (d *DepositClient) Deposit(order domain.Order, customer domain.Customer) (DepositResponseData, error) {
-	signature := crypto.SignDeposit(d.endpoint, order.ID, order.Amount, customer.Email, d.secret)
-	depositRequest := NewDepositRequest(order, customer, d.redirectURL, fmt.Sprintf("%s?uid=%s", d.checkoutURL, order.ID), signature)
+func (z *ZotaClient) Deposit(order domain.Order, customer domain.Customer) (DepositResponseData, error) {
+	signature := crypto.SignDeposit(z.endpoint, order.ID, order.Amount, customer.Email, z.secret)
+	depositRequest := NewDepositRequest(order, customer, z.redirectURL, fmt.Sprintf("%s?uid=%s", z.checkoutURL, order.ID), signature)
 
 	body := bytes.NewBuffer([]byte{})
 	json.NewEncoder(body).Encode(depositRequest)
 
-	response, _ := d.client.Post(d.baseURL, d.contentType, body)
+	response, _ := z.client.Post(z.baseURL, z.contentType, body)
 
 	if response.StatusCode != 200 {
 		var depositErrorRespone DepositErrorResponse
@@ -70,15 +70,15 @@ func (d *DepositClient) Deposit(order domain.Order, customer domain.Customer) (D
 	return depositSuccessResponse.Data, nil
 }
 
-func (d *DepositClient) OrderStatus(orderID, merchantOrderID string) {
+func (z *ZotaClient) OrderStatus(orderID, merchantOrderID string) {
 	params := url.Values{}
 
-	params.Set("merchantID", d.merchantID)
+	params.Set("merchantID", z.merchantID)
 	params.Set("orderID", orderID)
 	params.Set("merchantOrderID", merchantOrderID)
 	params.Set("timestamp", fmt.Sprint(time.Now().Unix()))
 	params.Set("signature", "labadabadaba")
 
-	urlWithParams := fmt.Sprintf("%s?%s", d.baseURL, params.Encode())
-	d.client.Get(urlWithParams)
+	urlWithParams := fmt.Sprintf("%s?%s", z.baseURL, params.Encode())
+	z.client.Get(urlWithParams)
 }

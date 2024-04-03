@@ -119,7 +119,7 @@ func TestDeposit(t *testing.T) {
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
 		}
-		depositClient := httpclient.NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		depositClient.Deposit(testOrder, testCustomer)
 
@@ -135,7 +135,7 @@ func TestDeposit(t *testing.T) {
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
 		}
-		depositClient := httpclient.NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		depositClient.Deposit(testOrder, testCustomer)
 
@@ -158,7 +158,7 @@ func TestDeposit(t *testing.T) {
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
 		}
-		depositClient := httpclient.NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		gotResponseData, _ := depositClient.Deposit(testOrder, testCustomer)
 
@@ -170,7 +170,7 @@ func TestDeposit(t *testing.T) {
 			code:     testErrorResponse.Code,
 			response: testErrorResponse,
 		}
-		depositClient := httpclient.NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		wantErr := &httpclient.DepositError{}
 		_, gotErr := depositClient.Deposit(testOrder, testCustomer)
@@ -202,7 +202,7 @@ func TestOrderStatus(t *testing.T) {
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
 		}
-		depositClient := httpclient.NewDepositClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		depositClient.OrderStatus(orderID, merchantOrderID)
 
