@@ -3,6 +3,7 @@ package httpclient
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -14,24 +15,28 @@ type HttpClient interface {
 }
 
 type DepositClient struct {
-	url         string
+	baseURL     string
+	redirectURL string
+	checkoutURL string
 	contentType string
 	client      HttpClient
 }
 
-func NewDepositClient(url, contentType string, client HttpClient) *DepositClient {
+func NewDepositClient(baseURL, contentType string, redirectURL, checkoutURL string, client HttpClient) *DepositClient {
 	return &DepositClient{
-		url:         url,
+		baseURL:     baseURL,
+		redirectURL: redirectURL,
+		checkoutURL: checkoutURL,
 		contentType: contentType,
 		client:      client,
 	}
 }
 
 func (d *DepositClient) Deposit(order domain.Order, customer domain.Customer) {
-	depositRequest := NewDepositRequest(order, customer)
+	depositRequest := NewDepositRequest(order, customer, d.redirectURL, fmt.Sprintf("%s?uid=%d", d.checkoutURL, order.ID))
 
 	body := bytes.NewBuffer([]byte{})
 	json.NewEncoder(body).Encode(depositRequest)
 
-	d.client.Post(d.url, d.contentType, body)
+	d.client.Post(d.baseURL, d.contentType, body)
 }

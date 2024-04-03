@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"reflect"
 	"testing"
 
 	"github.com/VitoNaychev/zota-challenge/domain"
 	"github.com/VitoNaychev/zota-challenge/httpclient"
+	"github.com/joho/godotenv"
 )
 
 var testOrder = domain.Order{
@@ -44,6 +46,8 @@ var testRequest = httpclient.DepositRequest{
 	CustomerZipCode:          "84280",
 	CustomerPhone:            "+66-77999110",
 	CustomerIP:               "103.106.8.104",
+	RedirectURL:              "https://www.example-merchant.com/payment-return/",
+	CheckoutURL:              "https://www.example-merchant.com/account/deposit/?uid=12",
 }
 
 type StubHttpClient struct {
@@ -61,16 +65,20 @@ func (s *StubHttpClient) Post(url string, contentType string, data io.Reader) (*
 }
 
 func TestDeposit(t *testing.T) {
+	godotenv.Load("../test.env")
+
 	t.Run("sends request to URL", func(t *testing.T) {
-		url := "test-url.com"
-		contentType := "application/json"
+		baseURL := os.Getenv("BASE_URL")
+		contentType := os.Getenv("CONTENT_TYPE")
+		redirectURL := os.Getenv("REDIRECT_URL")
+		checkoutURL := os.Getenv("CHECKOUT_URL")
 
 		httpClient := &StubHttpClient{}
-		depositClient := httpclient.NewDepositClient(url, contentType, httpClient)
+		depositClient := httpclient.NewDepositClient(baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		depositClient.Deposit(testOrder, testCustomer)
 
-		AssertEqual(t, httpClient.url, url)
+		AssertEqual(t, httpClient.url, baseURL)
 		AssertEqual(t, httpClient.contentType, contentType)
 
 		var gotRequest httpclient.DepositRequest
