@@ -68,7 +68,7 @@ func (z *ZotaClient) Deposit(order domain.Order, customer domain.Customer) (Depo
 	return depositSuccessResponse.Data, nil
 }
 
-func (z *ZotaClient) OrderStatus(orderID, merchantOrderID string) {
+func (z *ZotaClient) OrderStatus(orderID, merchantOrderID string) (OrderStatusResponseData, error) {
 	signature := crypto.SignOrderStatus(z.config.MerchantID, merchantOrderID, orderID, time.Now().Unix(), z.config.Secret)
 
 	params := url.Values{}
@@ -80,5 +80,18 @@ func (z *ZotaClient) OrderStatus(orderID, merchantOrderID string) {
 	params.Set("signature", signature)
 
 	urlWithParams := fmt.Sprintf("%s%s?%s", z.config.BaseURL, ORDER_STATUS_URL, params.Encode())
-	z.client.Get(urlWithParams)
+
+	response, _ := z.client.Get(urlWithParams)
+
+	if response.StatusCode != 200 {
+		var orderStatusErrorResponse OrderStatusErrorResponse
+		json.NewDecoder(response.Body).Decode(&orderStatusErrorResponse)
+
+		return OrderStatusResponseData{}, NewOrderStatusError(orderStatusErrorResponse.Message)
+	}
+
+	var orderStatusSuccessResponse OrderStatusSuccessResponse
+	json.NewDecoder(response.Body).Decode(&orderStatusSuccessResponse)
+
+	return orderStatusSuccessResponse.Data, nil
 }

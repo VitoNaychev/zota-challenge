@@ -2,6 +2,62 @@ package httpclient
 
 import "github.com/VitoNaychev/zota-challenge/domain"
 
+type OrderStatusError struct {
+	msg string
+}
+
+func NewOrderStatusError(msg string) *OrderStatusError {
+	return &OrderStatusError{msg}
+}
+
+func (o *OrderStatusError) Error() string {
+	return o.msg
+}
+
+type OrderStatusResponseExtraData struct {
+	AmountChanged     bool   `json:"amountChanged"`
+	AmountRounded     bool   `json:"amountRounded"`
+	AmountManipulated bool   `json:"amountManipulated"`
+	DCC               bool   `json:"dcc"`
+	OriginalAmount    string `json:"originalAmount"`
+	PaymentMethod     string `json:"paymentMethod"`
+	SelectedBankCode  string `json:"selectedBankCode"`
+	SelectedBankName  string `json:"selectedBankName"`
+}
+
+type OrderStatusRequest struct {
+	MerchantID      string `json:"merchantID"`
+	OrderID         string `json:"orderID"`
+	MerchantOrderID string `json:"merchantOrderID"`
+	Timestamp       string `json:"timestamp"`
+}
+
+type OrderStatusResponseData struct {
+	Type                   string                       `json:"type"`
+	Status                 string                       `json:"status"`
+	ErrorMessage           string                       `json:"errorMessage"`
+	EndpointID             string                       `json:"endpointID"`
+	ProcessorTransactionID string                       `json:"processorTransactionID"`
+	OrderID                string                       `json:"orderID"`
+	MerchantOrderID        string                       `json:"merchantOrderID"`
+	Amount                 string                       `json:"amount"`
+	Currency               string                       `json:"currency"`
+	CustomerEmail          string                       `json:"customerEmail"`
+	CustomParam            string                       `json:"customParam"`
+	ExtraData              OrderStatusResponseExtraData `json:"extraData"`
+	Request                OrderStatusRequest           `json:"request"`
+}
+
+type OrderStatusSuccessResponse struct {
+	Code int                     `json:"code"`
+	Data OrderStatusResponseData `json:"data"`
+}
+
+type OrderStatusErrorResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 type DepositError struct {
 	msg string
 }

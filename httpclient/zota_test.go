@@ -71,6 +71,49 @@ var testErrorResponse = httpclient.DepositErrorResponse{
 	Message: "endpoint currency mismatch",
 }
 
+var testOrderStatusRequest = httpclient.OrderStatusRequest{
+	MerchantID:      "EXAMPLE-MERCHANT-ID",
+	OrderID:         "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd",
+	MerchantOrderID: "QvE8dZshpKhaOmHY",
+	Timestamp:       "1564617600",
+}
+
+var testOrderStatusResponseExtraData = httpclient.OrderStatusResponseExtraData{
+	AmountChanged:     true,
+	AmountRounded:     true,
+	AmountManipulated: false,
+	DCC:               false,
+	OriginalAmount:    "499.98",
+	PaymentMethod:     "INSTANT-BANK-WIRE",
+	SelectedBankCode:  "SCB",
+	SelectedBankName:  "",
+}
+
+var testOrderStatusResponseData = httpclient.OrderStatusResponseData{
+	Type:                   "SALE",
+	Status:                 "PROCESSING",
+	ErrorMessage:           "",
+	EndpointID:             "1050",
+	ProcessorTransactionID: "",
+	OrderID:                "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd",
+	MerchantOrderID:        "QvE8dZshpKhaOmHY",
+	Amount:                 "500.00",
+	Currency:               "THB",
+	CustomerEmail:          "customer@email-address.com",
+	ExtraData:              testOrderStatusResponseExtraData,
+	Request:                testOrderStatusRequest,
+}
+
+var testOrderStatusSuccessResponse = httpclient.OrderStatusSuccessResponse{
+	Code: 200,
+	Data: testOrderStatusResponseData,
+}
+
+var testOrderStatusErrorResponse = httpclient.OrderStatusErrorResponse{
+	Code:    400,
+	Message: "timestamp too old",
+}
+
 type StubHttpClient struct {
 	url         string
 	contentType string
@@ -99,7 +142,16 @@ func (s *StubHttpClient) Post(url string, contentType string, data io.Reader) (*
 
 func (s *StubHttpClient) Get(url string) (*http.Response, error) {
 	s.url = url
-	return nil, nil
+
+	response := &http.Response{}
+
+	body := bytes.NewBuffer([]byte{})
+	json.NewEncoder(body).Encode(s.response)
+
+	response.StatusCode = s.code
+	response.Body = io.NopCloser(body)
+
+	return response, nil
 }
 
 func TestDeposit(t *testing.T) {
@@ -208,8 +260,8 @@ func TestOrderStatus(t *testing.T) {
 		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
 
 		httpClient := &StubHttpClient{
-			code:     testSuccessResponse.Code,
-			response: testSuccessResponse,
+			code:     testOrderStatusSuccessResponse.Code,
+			response: testOrderStatusSuccessResponse,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
@@ -234,8 +286,8 @@ func TestOrderStatus(t *testing.T) {
 		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
 
 		httpClient := &StubHttpClient{
-			code:     testSuccessResponse.Code,
-			response: testSuccessResponse,
+			code:     testOrderStatusSuccessResponse.Code,
+			response: testOrderStatusSuccessResponse,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
@@ -252,6 +304,39 @@ func TestOrderStatus(t *testing.T) {
 		gotSignature := queryParams.Get("signature")
 
 		AssertEqual(t, gotSignature, wantSignature)
+	})
+
+	t.Run("returns response data on successful request", func(t *testing.T) {
+		merchantOrderID := "QvE8dZshpKhaOmHY"
+		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+
+		httpClient := &StubHttpClient{
+			code:     testOrderStatusSuccessResponse.Code,
+			response: testOrderStatusSuccessResponse,
+		}
+		depositClient := httpclient.NewZotaClient(config, httpClient)
+
+		gotResponseData, _ := depositClient.OrderStatus(orderID, merchantOrderID)
+
+		AssertEqual(t, gotResponseData, testOrderStatusResponseData)
+	})
+
+	t.Run("returns error on unsuccessful request", func(t *testing.T) {
+		merchantOrderID := "QvE8dZshpKhaOmHY"
+		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+
+		httpClient := &StubHttpClient{
+			code:     testOrderStatusErrorResponse.Code,
+			response: testOrderStatusErrorResponse,
+		}
+		depositClient := httpclient.NewZotaClient(config, httpClient)
+
+		wantErr := &httpclient.OrderStatusError{}
+		_, gotErr := depositClient.OrderStatus(orderID, merchantOrderID)
+
+		if !errors.As(gotErr, &wantErr) {
+			t.Errorf("got error with type %v want %v", reflect.TypeOf(gotErr), reflect.TypeOf(wantErr))
+		}
 	})
 }
 
