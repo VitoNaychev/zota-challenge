@@ -7,8 +7,44 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/VitoNaychev/zota-challenge/domain"
 	"github.com/VitoNaychev/zota-challenge/httpclient"
 )
+
+var testOrder = domain.Order{
+	ID:          12,
+	Description: "Test order",
+	Amount:      500.00,
+	Currency:    "USD",
+}
+
+var testCustomer = domain.Customer{
+	Email:       "customer@email-address.com",
+	FirstName:   "John",
+	LastName:    "Doe",
+	Address:     "5/5 Moo 5 Thong Nai Pan Noi Beach, Baan Tai, Koh Phangan",
+	CountryCode: "TH",
+	City:        "Surat Thani",
+	ZipCode:     "84280",
+	Phone:       "+66-77999110",
+	IP:          "103.106.8.104",
+}
+
+var testRequest = httpclient.DepositRequest{
+	MerchantOrderID:          12,
+	MerchantOrderDescription: "Test order",
+	OrderAmount:              500.00,
+	OrderCurrency:            "USD",
+	CustomerEmail:            "customer@email-address.com",
+	CustomerFirstName:        "John",
+	CustomerLastName:         "Doe",
+	CustomerAddress:          "5/5 Moo 5 Thong Nai Pan Noi Beach, Baan Tai, Koh Phangan",
+	CustomerCountryCode:      "TH",
+	CustomerCity:             "Surat Thani",
+	CustomerZipCode:          "84280",
+	CustomerPhone:            "+66-77999110",
+	CustomerIP:               "103.106.8.104",
+}
 
 type StubHttpClient struct {
 	url         string
@@ -32,17 +68,14 @@ func TestDeposit(t *testing.T) {
 		httpClient := &StubHttpClient{}
 		depositClient := httpclient.NewDepositClient(url, contentType, httpClient)
 
-		wantOrderID := "abcdef"
-
-		depositClient.Deposit(wantOrderID)
+		depositClient.Deposit(testOrder, testCustomer)
 
 		AssertEqual(t, httpClient.url, url)
 		AssertEqual(t, httpClient.contentType, contentType)
 
-		var gotOrderID string
-		json.NewDecoder(httpClient.data).Decode(&gotOrderID)
-		AssertEqual(t, gotOrderID, wantOrderID)
-
+		var gotRequest httpclient.DepositRequest
+		json.NewDecoder(httpClient.data).Decode(&gotRequest)
+		AssertEqual(t, gotRequest, testRequest)
 	})
 }
 
