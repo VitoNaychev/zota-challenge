@@ -18,9 +18,10 @@ type DepositRequest struct {
 	CustomerIP               string
 	RedirectURL              string
 	CheckoutURL              string
+	Signature                string
 }
 
-func NewDepositRequest(order domain.Order, customer domain.Customer, redirectURL, checkoutURL string) DepositRequest {
+func NewDepositRequest(order domain.Order, customer domain.Customer, redirectURL, checkoutURL, signature string) DepositRequest {
 	depositRequest := DepositRequest{
 		MerchantOrderID:          order.ID,
 		MerchantOrderDescription: order.Description,
@@ -37,6 +38,7 @@ func NewDepositRequest(order domain.Order, customer domain.Customer, redirectURL
 		CustomerIP:               customer.IP,
 		RedirectURL:              redirectURL,
 		CheckoutURL:              checkoutURL,
+		Signature:                signature,
 	}
 
 	return depositRequest

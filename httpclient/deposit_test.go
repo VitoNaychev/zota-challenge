@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/VitoNaychev/zota-challenge/crypto"
 	"github.com/VitoNaychev/zota-challenge/domain"
 	"github.com/VitoNaychev/zota-challenge/httpclient"
 	"github.com/joho/godotenv"
@@ -67,14 +68,31 @@ func (s *StubHttpClient) Post(url string, contentType string, data io.Reader) (*
 func TestDeposit(t *testing.T) {
 	godotenv.Load("../test.env")
 
-	t.Run("sends request to URL", func(t *testing.T) {
-		baseURL := os.Getenv("BASE_URL")
-		contentType := os.Getenv("CONTENT_TYPE")
-		redirectURL := os.Getenv("REDIRECT_URL")
-		checkoutURL := os.Getenv("CHECKOUT_URL")
+	secret := os.Getenv("API_SECRET_KEY")
+	endpoint := os.Getenv("ENDPOINT_ID")
 
+	baseURL := os.Getenv("BASE_URL")
+	contentType := os.Getenv("CONTENT_TYPE")
+
+	redirectURL := os.Getenv("REDIRECT_URL")
+	checkoutURL := os.Getenv("CHECKOUT_URL")
+
+	t.Run("signs request", func(t *testing.T) {
 		httpClient := &StubHttpClient{}
-		depositClient := httpclient.NewDepositClient(baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+
+		depositClient.Deposit(testOrder, testCustomer)
+
+		signature := crypto.SignDeposit(endpoint, testOrder.ID, testOrder.Amount, testCustomer.Email, secret)
+
+		var gotRequest httpclient.DepositRequest
+		json.NewDecoder(httpClient.data).Decode(&gotRequest)
+		AssertEqual(t, gotRequest.Signature, signature)
+	})
+
+	t.Run("sends request to URL", func(t *testing.T) {
+		httpClient := &StubHttpClient{}
+		depositClient := httpclient.NewDepositClient(secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
 
 		depositClient.Deposit(testOrder, testCustomer)
 
@@ -85,6 +103,7 @@ func TestDeposit(t *testing.T) {
 		json.NewDecoder(httpClient.data).Decode(&gotRequest)
 		AssertEqual(t, gotRequest, testRequest)
 	})
+
 }
 
 func AssertEqual[T any](t testing.TB, got, want T) {
