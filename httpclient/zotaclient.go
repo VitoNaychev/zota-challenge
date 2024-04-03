@@ -21,44 +21,39 @@ type HttpClient interface {
 	Get(string) (*http.Response, error)
 }
 
+type ZotaConfig struct {
+	MerchantID string
+	Secret     string
+	Endpoint   string
+
+	BaseURL     string
+	ContentType string
+
+	RedirectURL string
+	CheckoutURL string
+}
+
 type ZotaClient struct {
-	merchantID string
-	secret     string
-	endpoint   string
-
-	baseURL     string
-	contentType string
-
-	redirectURL string
-	checkoutURL string
+	config ZotaConfig
 
 	client HttpClient
 }
 
-func NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL string, client HttpClient) *ZotaClient {
+func NewZotaClient(config ZotaConfig, client HttpClient) *ZotaClient {
 	return &ZotaClient{
-		merchantID: merchantID,
-		secret:     secret,
-		endpoint:   endpoint,
-
-		baseURL:     baseURL,
-		contentType: contentType,
-
-		redirectURL: redirectURL,
-		checkoutURL: checkoutURL,
-
+		config: config,
 		client: client,
 	}
 }
 
 func (z *ZotaClient) Deposit(order domain.Order, customer domain.Customer) (DepositResponseData, error) {
-	signature := crypto.SignDeposit(z.endpoint, order.ID, order.Amount, customer.Email, z.secret)
-	depositRequest := NewDepositRequest(order, customer, z.redirectURL, fmt.Sprintf("%s?uid=%s", z.checkoutURL, order.ID), signature)
+	signature := crypto.SignDeposit(z.config.Endpoint, order.ID, order.Amount, customer.Email, z.config.Secret)
+	depositRequest := NewDepositRequest(order, customer, z.config.RedirectURL, fmt.Sprintf("%s?uid=%s", z.config.CheckoutURL, order.ID), signature)
 
 	body := bytes.NewBuffer([]byte{})
 	json.NewEncoder(body).Encode(depositRequest)
 
-	response, _ := z.client.Post(z.baseURL+DEPOSIT_URL+z.endpoint, z.contentType, body)
+	response, _ := z.client.Post(z.config.BaseURL+DEPOSIT_URL+z.config.Endpoint, z.config.ContentType, body)
 
 	if response.StatusCode != 200 {
 		var depositErrorRespone DepositErrorResponse
@@ -76,12 +71,12 @@ func (z *ZotaClient) Deposit(order domain.Order, customer domain.Customer) (Depo
 func (z *ZotaClient) OrderStatus(orderID, merchantOrderID string) {
 	params := url.Values{}
 
-	params.Set("merchantID", z.merchantID)
+	params.Set("merchantID", z.config.MerchantID)
 	params.Set("orderID", orderID)
 	params.Set("merchantOrderID", merchantOrderID)
 	params.Set("timestamp", fmt.Sprint(time.Now().Unix()))
 	params.Set("signature", "labadabadaba")
 
-	urlWithParams := fmt.Sprintf("%s%s?%s", z.baseURL, ORDER_STATUS_URL, params.Encode())
+	urlWithParams := fmt.Sprintf("%s%s?%s", z.config.BaseURL, ORDER_STATUS_URL, params.Encode())
 	z.client.Get(urlWithParams)
 }

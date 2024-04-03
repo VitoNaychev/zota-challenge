@@ -104,26 +104,28 @@ func (s *StubHttpClient) Get(url string) (*http.Response, error) {
 func TestDeposit(t *testing.T) {
 	godotenv.Load("../test.env")
 
-	merchantID := os.Getenv("MERCHANT_ID")
-	secret := os.Getenv("API_SECRET_KEY")
-	endpoint := os.Getenv("ENDPOINT_ID")
+	config := httpclient.ZotaConfig{
+		MerchantID: os.Getenv("MERCHANT_ID"),
+		Secret:     os.Getenv("API_SECRET_KEY"),
+		Endpoint:   os.Getenv("ENDPOINT_ID"),
 
-	baseURL := os.Getenv("BASE_URL")
-	contentType := os.Getenv("CONTENT_TYPE")
+		BaseURL:     os.Getenv("BASE_URL"),
+		ContentType: os.Getenv("CONTENT_TYPE"),
 
-	redirectURL := os.Getenv("REDIRECT_URL")
-	checkoutURL := os.Getenv("CHECKOUT_URL")
+		RedirectURL: os.Getenv("REDIRECT_URL"),
+		CheckoutURL: os.Getenv("CHECKOUT_URL"),
+	}
 
 	t.Run("signs request", func(t *testing.T) {
 		httpClient := &StubHttpClient{
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
 		}
-		depositClient := httpclient.NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewZotaClient(config, httpClient)
 
 		depositClient.Deposit(testOrder, testCustomer)
 
-		signature := crypto.SignDeposit(endpoint, testOrder.ID, testOrder.Amount, testCustomer.Email, secret)
+		signature := crypto.SignDeposit(config.Endpoint, testOrder.ID, testOrder.Amount, testCustomer.Email, config.Secret)
 
 		var gotRequest httpclient.DepositRequest
 		json.NewDecoder(httpClient.data).Decode(&gotRequest)
@@ -131,23 +133,23 @@ func TestDeposit(t *testing.T) {
 	})
 
 	t.Run("sends request", func(t *testing.T) {
-		depositURLPath := "/api/v1/deposit/request/" + endpoint
+		depositURLPath := "/api/v1/deposit/request/" + config.Endpoint
 
 		httpClient := &StubHttpClient{
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
 		}
-		depositClient := httpclient.NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewZotaClient(config, httpClient)
 
 		depositClient.Deposit(testOrder, testCustomer)
 
-		AssertEqual(t, httpClient.url, baseURL+depositURLPath)
-		AssertEqual(t, httpClient.contentType, contentType)
+		AssertEqual(t, httpClient.url, config.BaseURL+depositURLPath)
+		AssertEqual(t, httpClient.contentType, config.ContentType)
 
 		var gotRequest httpclient.DepositRequest
 		json.NewDecoder(httpClient.data).Decode(&gotRequest)
 
-		signature := crypto.SignDeposit(endpoint, testOrder.ID, testOrder.Amount, testCustomer.Email, secret)
+		signature := crypto.SignDeposit(config.Endpoint, testOrder.ID, testOrder.Amount, testCustomer.Email, config.Secret)
 		testRequest.Signature = signature
 
 		AssertEqual(t, gotRequest, testRequest)
@@ -160,7 +162,7 @@ func TestDeposit(t *testing.T) {
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
 		}
-		depositClient := httpclient.NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewZotaClient(config, httpClient)
 
 		gotResponseData, _ := depositClient.Deposit(testOrder, testCustomer)
 
@@ -172,7 +174,7 @@ func TestDeposit(t *testing.T) {
 			code:     testErrorResponse.Code,
 			response: testErrorResponse,
 		}
-		depositClient := httpclient.NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewZotaClient(config, httpClient)
 
 		wantErr := &httpclient.DepositError{}
 		_, gotErr := depositClient.Deposit(testOrder, testCustomer)
@@ -186,15 +188,17 @@ func TestDeposit(t *testing.T) {
 func TestOrderStatus(t *testing.T) {
 	godotenv.Load("../test.env")
 
-	merchantID := os.Getenv("MERCHANT_ID")
-	secret := os.Getenv("API_SECRET_KEY")
-	endpoint := os.Getenv("ENDPOINT_ID")
+	config := httpclient.ZotaConfig{
+		MerchantID: os.Getenv("MERCHANT_ID"),
+		Secret:     os.Getenv("API_SECRET_KEY"),
+		Endpoint:   os.Getenv("ENDPOINT_ID"),
 
-	baseURL := os.Getenv("BASE_URL")
-	contentType := os.Getenv("CONTENT_TYPE")
+		BaseURL:     os.Getenv("BASE_URL"),
+		ContentType: os.Getenv("CONTENT_TYPE"),
 
-	redirectURL := os.Getenv("REDIRECT_URL")
-	checkoutURL := os.Getenv("CHECKOUT_URL")
+		RedirectURL: os.Getenv("REDIRECT_URL"),
+		CheckoutURL: os.Getenv("CHECKOUT_URL"),
+	}
 
 	t.Run("sets query parameters", func(t *testing.T) {
 		orderStatusURLPath := "/api/v1/query/order-status/"
@@ -206,7 +210,7 @@ func TestOrderStatus(t *testing.T) {
 			code:     testSuccessResponse.Code,
 			response: testSuccessResponse,
 		}
-		depositClient := httpclient.NewZotaClient(merchantID, secret, endpoint, baseURL, contentType, redirectURL, checkoutURL, httpClient)
+		depositClient := httpclient.NewZotaClient(config, httpClient)
 
 		depositClient.OrderStatus(orderID, merchantOrderID)
 
@@ -215,11 +219,11 @@ func TestOrderStatus(t *testing.T) {
 			t.Fatalf("got error %v", err)
 		}
 
-		AssertEqual(t, parsedURL.Path, baseURL+orderStatusURLPath)
+		AssertEqual(t, parsedURL.Path, config.BaseURL+orderStatusURLPath)
 
 		queryParams := parsedURL.Query()
 
-		AssertEqual(t, queryParams.Get("merchantID"), merchantID)
+		AssertEqual(t, queryParams.Get("merchantID"), config.MerchantID)
 		AssertEqual(t, queryParams.Get("orderID"), orderID)
 		AssertEqual(t, queryParams.Get("merchantOrderID"), merchantOrderID)
 		AssertEqual(t, queryParams.Has("timestamp"), true)
