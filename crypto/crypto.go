@@ -12,3 +12,10 @@ func SignDeposit(endpoint, merchantOrderID string, orderAmount float64, customer
 
 	return hex.EncodeToString(sig[:])
 }
+
+func SignOrderStatus(merchantID, merchantOrderID string, orderID string, timestamp int64, secret string) string {
+	s := fmt.Sprintf("%s%s%s%d%s", merchantID, merchantOrderID, orderID, timestamp, secret)
+	sig := sha256.Sum256([]byte(s))
+
+	return hex.EncodeToString(sig[:])
+}

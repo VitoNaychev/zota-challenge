@@ -216,9 +216,7 @@ func TestOrderStatus(t *testing.T) {
 		depositClient.OrderStatus(orderID, merchantOrderID)
 
 		parsedURL, err := url.Parse(httpClient.url)
-		if err != nil {
-			t.Fatalf("got error %v", err)
-		}
+		AssertNoErr(t, err)
 
 		AssertEqual(t, parsedURL.Path, config.BaseURL+orderStatusURLPath)
 
@@ -244,21 +242,25 @@ func TestOrderStatus(t *testing.T) {
 		depositClient.OrderStatus(orderID, merchantOrderID)
 
 		parsedURL, err := url.Parse(httpClient.url)
-		if err != nil {
-			t.Fatalf("got error %v", err)
-		}
+		AssertNoErr(t, err)
 
 		queryParams := parsedURL.Query()
 		timestamp, err := strconv.ParseInt(queryParams.Get("timestamp"), 10, 64)
-		if err != nil {
-			t.Fatalf("got error %v", err)
-		}
+		AssertNoErr(t, err)
 
 		wantSignature := crypto.SignOrderStatus(config.MerchantID, merchantOrderID, orderID, timestamp, config.Secret)
 		gotSignature := queryParams.Get("signature")
 
 		AssertEqual(t, gotSignature, wantSignature)
 	})
+}
+
+func AssertNoErr(t testing.TB, err error) {
+	t.Helper()
+
+	if err != nil {
+		t.Fatalf("got error %v", err)
+	}
 }
 
 func AssertEqual[T any](t testing.TB, got, want T) {
