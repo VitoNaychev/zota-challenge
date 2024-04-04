@@ -5,12 +5,31 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
+	"time"
 
 	"github.com/VitoNaychev/zota-challenge/domain"
 	"github.com/VitoNaychev/zota-challenge/httpclient"
 	"github.com/joho/godotenv"
 )
+
+var customer = domain.Customer{
+	Email:       "customer@email-address.com",
+	FirstName:   "John",
+	LastName:    "Doe",
+	Address:     "5/5 Moo 5 Thong Nai Pan Noi Beach, Baan Tai, Koh Phangan",
+	CountryCode: "TH",
+	City:        "Surat Thani",
+	ZipCode:     "84280",
+	Phone:       "+66-77999110",
+	IP:          "103.106.8.104",
+}
+
+var order = domain.Order{
+	ID:          "QvE8dZshpKhaOmHY",
+	Description: "Test order",
+	Amount:      500.00,
+	Currency:    "USD",
+}
 
 func main() {
 	godotenv.Load("../../.env")
@@ -22,69 +41,37 @@ func main() {
 
 	zotaClient := httpclient.NewZotaClient(config, httpclient.HttpClient{})
 
-	var customer domain.Customer
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Println()
-		fmt.Println("[1] Create/Update customer    [2] Create deposit")
-		fmt.Print("Choose and option: ")
-
-		optionStr, _ := reader.ReadString('\n')
-		option, err := strconv.Atoi(optionStr)
+		fmt.Print("Input order ID: ")
+		merchantOrderID, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Println("Invalid option")
-			continue
+			break
 		}
 
-		switch option {
-		case 1:
-			customer = createCustomer()
-		case 2:
-			order := createOrder()
-
-			zotaClient.Deposit(order, customer)
+		order.ID = merchantOrderID
+		depositResponse, err := zotaClient.Deposit(order, customer)
+		if err != nil {
+			log.Println("Deposit error: ", err)
 		}
 
+		log.Println("Deposit call sucessfull")
+		log.Println("\tOrder ID: ", depositResponse.OrderID)
+		log.Println("\tDeposit URL: ", depositResponse.DepositURL)
+		log.Println("Begining order status polling")
+
+		for {
+			orderStatusResponse, err := zotaClient.OrderStatus(depositResponse.OrderID, merchantOrderID)
+			if err != nil {
+				log.Println("Order Status error: ", err)
+				break
+			}
+			if orderStatusResponse.Status == "APPROVED" || orderStatusResponse.Status == "DECLINED" {
+				log.Println("Order Status completed successfully, got status: ", orderStatusResponse.Status)
+				break
+			}
+			log.Printf("\tCurrent status: %s; Polling...", orderStatusResponse.Status)
+			time.Sleep(time.Second * 10)
+		}
 	}
-
-}
-
-func createCustomer() domain.Customer {
-	customer := domain.Customer{
-		Address:     "Sofia Center, General Gurko St 21, 1000 Sofia",
-		CountryCode: "BG",
-		City:        "Sofia",
-		ZipCode:     "1000",
-		Phone:       "0893 885 158",
-		IP:          "192.168.0.10",
-	}
-
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("\tEnter Email: ")
-	customer.Email, _ = reader.ReadString('\n')
-	fmt.Print("\tEnter First Name: ")
-	customer.FirstName, _ = reader.ReadString('\n')
-	fmt.Print("\tEnter Last Name: ")
-	customer.LastName, _ = reader.ReadString('\n')
-
-	return customer
-}
-
-func createOrder() domain.Order {
-	order := domain.Order{}
-
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("\tEnter Order ID: ")
-	order.ID, _ = reader.ReadString('\n')
-	fmt.Print("\tEnter Order Description: ")
-	order.Description, _ = reader.ReadString('\n')
-	fmt.Print("\tEnter Order Amount: ")
-	amountStr, _ := reader.ReadString('\n')
-	order.Amount, _ = strconv.ParseFloat(amountStr, 64)
-
-	order.Currency = os.Getenv("CURRENCY")
-
-	return order
 }
