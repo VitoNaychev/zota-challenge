@@ -69,19 +69,12 @@ func (z *ZotaClient) Deposit(order domain.Order, customer domain.Customer) (Depo
 }
 
 func (z *ZotaClient) OrderStatus(orderID, merchantOrderID string) (OrderStatusResponseData, error) {
-	signature := crypto.SignOrderStatus(z.config.MerchantID, merchantOrderID, orderID, time.Now().Unix(), z.config.Secret)
+	unixTimestamp := time.Now().Unix()
+	signature := crypto.SignOrderStatus(z.config.MerchantID, merchantOrderID, orderID, unixTimestamp, z.config.Secret)
 
-	params := url.Values{}
+	url := formatOrderStatusURL(z.config.BaseURL, z.config.MerchantID, orderID, merchantOrderID, unixTimestamp, signature)
 
-	params.Set("merchantID", z.config.MerchantID)
-	params.Set("orderID", orderID)
-	params.Set("merchantOrderID", merchantOrderID)
-	params.Set("timestamp", fmt.Sprint(time.Now().Unix()))
-	params.Set("signature", signature)
-
-	urlWithParams := fmt.Sprintf("%s%s?%s", z.config.BaseURL, ORDER_STATUS_URL, params.Encode())
-
-	response, _ := z.client.Get(urlWithParams)
+	response, _ := z.client.Get(url)
 
 	if response.StatusCode != 200 {
 		var orderStatusErrorResponse OrderStatusErrorResponse
@@ -94,4 +87,17 @@ func (z *ZotaClient) OrderStatus(orderID, merchantOrderID string) (OrderStatusRe
 	json.NewDecoder(response.Body).Decode(&orderStatusSuccessResponse)
 
 	return orderStatusSuccessResponse.Data, nil
+}
+
+func formatOrderStatusURL(baseURL, merchantID, orderID, merchantOrderID string, timestamp int64, signature string) string {
+	params := url.Values{}
+	params.Set("merchantID", merchantID)
+	params.Set("orderID", orderID)
+	params.Set("merchantOrderID", merchantOrderID)
+	params.Set("timestamp", fmt.Sprint(timestamp))
+	params.Set("signature", signature)
+
+	urlWithParams := fmt.Sprintf("%s%s?%s", baseURL, ORDER_STATUS_URL, params.Encode())
+
+	return urlWithParams
 }
