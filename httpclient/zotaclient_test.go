@@ -20,6 +20,8 @@ import (
 )
 
 type StubHttpClient struct {
+	err error
+
 	url         string
 	contentType string
 	data        io.Reader
@@ -32,6 +34,10 @@ func (s *StubHttpClient) Post(url string, contentType string, data io.Reader) (*
 	s.url = url
 	s.contentType = contentType
 	s.data = data
+
+	if s.err != nil {
+		return nil, s.err
+	}
 
 	response := &http.Response{}
 
@@ -47,6 +53,10 @@ func (s *StubHttpClient) Post(url string, contentType string, data io.Reader) (*
 
 func (s *StubHttpClient) Get(url string) (*http.Response, error) {
 	s.url = url
+
+	if s.err != nil {
+		return nil, s.err
+	}
 
 	response := &http.Response{}
 
@@ -104,7 +114,18 @@ func TestDeposit(t *testing.T) {
 		assert.Equal(t, gotRequest, testdata.Request)
 	})
 
-	t.Run("returns error on failure to send request", func(t *testing.T) {})
+	t.Run("returns error on failure to send request", func(t *testing.T) {
+		dummyErr := errors.New("dummy error")
+
+		httpClient := &StubHttpClient{
+			err: dummyErr,
+		}
+		depositClient := httpclient.NewZotaClient(config, httpClient)
+
+		_, err := depositClient.Deposit(testdata.Order, testdata.Customer)
+
+		assert.Equal(t, err, dummyErr)
+	})
 
 	t.Run("returns response data on successful request", func(t *testing.T) {
 		httpClient := &StubHttpClient{
@@ -157,7 +178,7 @@ func TestOrderStatus(t *testing.T) {
 		parsedURL, err := url.Parse(httpClient.url)
 		assert.NoErr(t, err)
 
-		assert.Equal(t, parsedURL.Path, config.BaseURL+orderStatusURLPath)
+		assert.Equal(t, parsedURL.Path, orderStatusURLPath)
 
 		queryParams := parsedURL.Query()
 
@@ -191,6 +212,22 @@ func TestOrderStatus(t *testing.T) {
 		gotSignature := queryParams.Get("signature")
 
 		assert.Equal(t, gotSignature, wantSignature)
+	})
+
+	t.Run("returns error on failure to send request", func(t *testing.T) {
+		merchantOrderID := "QvE8dZshpKhaOmHY"
+		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+
+		dummyErr := errors.New("dummy error")
+
+		httpClient := &StubHttpClient{
+			err: dummyErr,
+		}
+		depositClient := httpclient.NewZotaClient(config, httpClient)
+
+		_, err := depositClient.OrderStatus(merchantOrderID, orderID)
+
+		assert.Equal(t, err, dummyErr)
 	})
 
 	t.Run("returns response data on successful request", func(t *testing.T) {
