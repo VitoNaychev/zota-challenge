@@ -88,18 +88,28 @@ func requireEnvVariable(name string) error {
 	return nil
 }
 
-type HttpClient interface {
+type Client interface {
 	Post(string, string, io.Reader) (*http.Response, error)
 	Get(string) (*http.Response, error)
+}
+
+type HttpClient struct{}
+
+func (h HttpClient) Post(url string, contentType string, body io.Reader) (*http.Response, error) {
+	return http.Post(url, contentType, body)
+}
+
+func (h HttpClient) Get(url string) (*http.Response, error) {
+	return http.Get(url)
 }
 
 type ZotaClient struct {
 	config ZotaConfig
 
-	client HttpClient
+	client Client
 }
 
-func NewZotaClient(config ZotaConfig, client HttpClient) *ZotaClient {
+func NewZotaClient(config ZotaConfig, client Client) *ZotaClient {
 	return &ZotaClient{
 		config: config,
 		client: client,
@@ -113,7 +123,10 @@ func (z *ZotaClient) Deposit(order domain.Order, customer domain.Customer) (Depo
 	body := bytes.NewBuffer([]byte{})
 	json.NewEncoder(body).Encode(depositRequest)
 
-	response, _ := z.client.Post(z.config.BaseURL+DEPOSIT_URL+z.config.Endpoint, z.config.ContentType, body)
+	response, err := z.client.Post(z.config.BaseURL+DEPOSIT_URL+z.config.Endpoint, z.config.ContentType, body)
+	if err != nil {
+		return DepositResponseData{}, err
+	}
 
 	if response.StatusCode != 200 {
 		var depositErrorRespone DepositErrorResponse
@@ -134,7 +147,10 @@ func (z *ZotaClient) OrderStatus(orderID, merchantOrderID string) (OrderStatusRe
 
 	url := formatOrderStatusURL(z.config.BaseURL, z.config.MerchantID, orderID, merchantOrderID, unixTimestamp, signature)
 
-	response, _ := z.client.Get(url)
+	response, err := z.client.Get(url)
+	if err != nil {
+		return OrderStatusResponseData{}, err
+	}
 
 	if response.StatusCode != 200 {
 		var orderStatusErrorResponse OrderStatusErrorResponse
