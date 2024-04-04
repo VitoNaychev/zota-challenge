@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"reflect"
 	"strconv"
 
@@ -62,17 +61,8 @@ func (s *StubHttpClient) Get(url string) (*http.Response, error) {
 func TestDeposit(t *testing.T) {
 	godotenv.Load("../test.env")
 
-	config := httpclient.ZotaConfig{
-		MerchantID: os.Getenv("MERCHANT_ID"),
-		Secret:     os.Getenv("API_SECRET_KEY"),
-		Endpoint:   os.Getenv("ENDPOINT_ID"),
-
-		BaseURL:     os.Getenv("BASE_URL"),
-		ContentType: os.Getenv("CONTENT_TYPE"),
-
-		RedirectURL: os.Getenv("REDIRECT_URL"),
-		CheckoutURL: os.Getenv("CHECKOUT_URL"),
-	}
+	config, err := httpclient.InitZotaConfigFromEnv()
+	AssertNoErr(t, err)
 
 	t.Run("signs request", func(t *testing.T) {
 		httpClient := &StubHttpClient{
@@ -146,17 +136,8 @@ func TestDeposit(t *testing.T) {
 func TestOrderStatus(t *testing.T) {
 	godotenv.Load("../test.env")
 
-	config := httpclient.ZotaConfig{
-		MerchantID: os.Getenv("MERCHANT_ID"),
-		Secret:     os.Getenv("API_SECRET_KEY"),
-		Endpoint:   os.Getenv("ENDPOINT_ID"),
-
-		BaseURL:     os.Getenv("BASE_URL"),
-		ContentType: os.Getenv("CONTENT_TYPE"),
-
-		RedirectURL: os.Getenv("REDIRECT_URL"),
-		CheckoutURL: os.Getenv("CHECKOUT_URL"),
-	}
+	config, err := httpclient.InitZotaConfigFromEnv()
+	AssertNoErr(t, err)
 
 	t.Run("sets query parameters", func(t *testing.T) {
 		orderStatusURLPath := "/api/v1/query/order-status/"

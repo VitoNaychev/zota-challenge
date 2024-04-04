@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/VitoNaychev/zota-challenge/crypto"
@@ -16,9 +17,16 @@ import (
 var DEPOSIT_URL = "/api/v1/deposit/request/"
 var ORDER_STATUS_URL = "/api/v1/query/order-status/"
 
-type HttpClient interface {
-	Post(string, string, io.Reader) (*http.Response, error)
-	Get(string) (*http.Response, error)
+type ZotaConfigError struct {
+	msg string
+}
+
+func NewZotaConfigError(name string) *ZotaConfigError {
+	return &ZotaConfigError{fmt.Sprintf("enviornment variable %s is not set", name)}
+}
+
+func (z *ZotaConfigError) Error() string {
+	return z.msg
 }
 
 type ZotaConfig struct {
@@ -31,6 +39,58 @@ type ZotaConfig struct {
 
 	RedirectURL string
 	CheckoutURL string
+}
+
+func InitZotaConfigFromEnv() (ZotaConfig, error) {
+	if err := requireEnvVariable("MERCHANT_ID"); err != nil {
+		return ZotaConfig{}, err
+	}
+	if err := requireEnvVariable("API_SECRET_KEY"); err != nil {
+		return ZotaConfig{}, err
+	}
+	if err := requireEnvVariable("ENDPOINT_ID"); err != nil {
+		return ZotaConfig{}, err
+	}
+
+	if err := requireEnvVariable("BASE_URL"); err != nil {
+		return ZotaConfig{}, err
+	}
+	if err := requireEnvVariable("CONTENT_TYPE"); err != nil {
+		return ZotaConfig{}, err
+	}
+
+	if err := requireEnvVariable("REDIRECT_URL"); err != nil {
+		return ZotaConfig{}, err
+	}
+	if err := requireEnvVariable("CHECKOUT_URL"); err != nil {
+		return ZotaConfig{}, err
+	}
+
+	config := ZotaConfig{
+		MerchantID: os.Getenv("MERCHANT_ID"),
+		Secret:     os.Getenv("API_SECRET_KEY"),
+		Endpoint:   os.Getenv("ENDPOINT_ID"),
+
+		BaseURL:     os.Getenv("BASE_URL"),
+		ContentType: os.Getenv("CONTENT_TYPE"),
+
+		RedirectURL: os.Getenv("REDIRECT_URL"),
+		CheckoutURL: os.Getenv("CHECKOUT_URL"),
+	}
+
+	return config, nil
+}
+
+func requireEnvVariable(name string) error {
+	if _, ok := os.LookupEnv(name); !ok {
+		return NewZotaConfigError(name)
+	}
+	return nil
+}
+
+type HttpClient interface {
+	Post(string, string, io.Reader) (*http.Response, error)
+	Get(string) (*http.Response, error)
 }
 
 type ZotaClient struct {
