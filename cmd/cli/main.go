@@ -32,7 +32,7 @@ var order = domain.Order{
 }
 
 func main() {
-	godotenv.Load("../../.env")
+	godotenv.Load("../../test.env")
 
 	config, err := httpclient.InitZotaConfigFromEnv()
 	if err != nil {
