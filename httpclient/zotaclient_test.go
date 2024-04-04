@@ -12,6 +12,7 @@ import (
 
 	"testing"
 
+	"github.com/VitoNaychev/zota-challenge/assert"
 	"github.com/VitoNaychev/zota-challenge/crypto"
 	"github.com/VitoNaychev/zota-challenge/httpclient"
 	"github.com/VitoNaychev/zota-challenge/httpclient/testdata"
@@ -62,7 +63,7 @@ func TestDeposit(t *testing.T) {
 	godotenv.Load("../test.env")
 
 	config, err := httpclient.InitZotaConfigFromEnv()
-	AssertNoErr(t, err)
+	assert.NoErr(t, err)
 
 	t.Run("signs request", func(t *testing.T) {
 		httpClient := &StubHttpClient{
@@ -77,7 +78,7 @@ func TestDeposit(t *testing.T) {
 
 		var gotRequest httpclient.DepositRequest
 		json.NewDecoder(httpClient.data).Decode(&gotRequest)
-		AssertEqual(t, gotRequest.Signature, signature)
+		assert.Equal(t, gotRequest.Signature, signature)
 	})
 
 	t.Run("sends request", func(t *testing.T) {
@@ -91,8 +92,8 @@ func TestDeposit(t *testing.T) {
 
 		depositClient.Deposit(testdata.Order, testdata.Customer)
 
-		AssertEqual(t, httpClient.url, config.BaseURL+depositURLPath)
-		AssertEqual(t, httpClient.contentType, config.ContentType)
+		assert.Equal(t, httpClient.url, config.BaseURL+depositURLPath)
+		assert.Equal(t, httpClient.contentType, config.ContentType)
 
 		var gotRequest httpclient.DepositRequest
 		json.NewDecoder(httpClient.data).Decode(&gotRequest)
@@ -100,7 +101,7 @@ func TestDeposit(t *testing.T) {
 		signature := crypto.SignDeposit(config.Endpoint, testdata.Order.ID, testdata.Order.Amount, testdata.Customer.Email, config.Secret)
 		testdata.Request.Signature = signature
 
-		AssertEqual(t, gotRequest, testdata.Request)
+		assert.Equal(t, gotRequest, testdata.Request)
 	})
 
 	t.Run("returns error on failure to send request", func(t *testing.T) {})
@@ -114,7 +115,7 @@ func TestDeposit(t *testing.T) {
 
 		gotResponseData, _ := depositClient.Deposit(testdata.Order, testdata.Customer)
 
-		AssertEqual(t, gotResponseData, testdata.DepositResponseData)
+		assert.Equal(t, gotResponseData, testdata.DepositResponseData)
 	})
 
 	t.Run("returns error on unsuccessful request", func(t *testing.T) {
@@ -137,7 +138,7 @@ func TestOrderStatus(t *testing.T) {
 	godotenv.Load("../test.env")
 
 	config, err := httpclient.InitZotaConfigFromEnv()
-	AssertNoErr(t, err)
+	assert.NoErr(t, err)
 
 	t.Run("sets query parameters", func(t *testing.T) {
 		orderStatusURLPath := "/api/v1/query/order-status/"
@@ -154,17 +155,17 @@ func TestOrderStatus(t *testing.T) {
 		depositClient.OrderStatus(orderID, merchantOrderID)
 
 		parsedURL, err := url.Parse(httpClient.url)
-		AssertNoErr(t, err)
+		assert.NoErr(t, err)
 
-		AssertEqual(t, parsedURL.Path, config.BaseURL+orderStatusURLPath)
+		assert.Equal(t, parsedURL.Path, config.BaseURL+orderStatusURLPath)
 
 		queryParams := parsedURL.Query()
 
-		AssertEqual(t, queryParams.Get("merchantID"), config.MerchantID)
-		AssertEqual(t, queryParams.Get("orderID"), orderID)
-		AssertEqual(t, queryParams.Get("merchantOrderID"), merchantOrderID)
-		AssertEqual(t, queryParams.Has("timestamp"), true)
-		AssertEqual(t, queryParams.Has("signature"), true)
+		assert.Equal(t, queryParams.Get("merchantID"), config.MerchantID)
+		assert.Equal(t, queryParams.Get("orderID"), orderID)
+		assert.Equal(t, queryParams.Get("merchantOrderID"), merchantOrderID)
+		assert.Equal(t, queryParams.Has("timestamp"), true)
+		assert.Equal(t, queryParams.Has("signature"), true)
 	})
 
 	t.Run("signs request", func(t *testing.T) {
@@ -180,16 +181,16 @@ func TestOrderStatus(t *testing.T) {
 		depositClient.OrderStatus(orderID, merchantOrderID)
 
 		parsedURL, err := url.Parse(httpClient.url)
-		AssertNoErr(t, err)
+		assert.NoErr(t, err)
 
 		queryParams := parsedURL.Query()
 		timestamp, err := strconv.ParseInt(queryParams.Get("timestamp"), 10, 64)
-		AssertNoErr(t, err)
+		assert.NoErr(t, err)
 
 		wantSignature := crypto.SignOrderStatus(config.MerchantID, merchantOrderID, orderID, timestamp, config.Secret)
 		gotSignature := queryParams.Get("signature")
 
-		AssertEqual(t, gotSignature, wantSignature)
+		assert.Equal(t, gotSignature, wantSignature)
 	})
 
 	t.Run("returns response data on successful request", func(t *testing.T) {
@@ -204,7 +205,7 @@ func TestOrderStatus(t *testing.T) {
 
 		gotResponseData, _ := depositClient.OrderStatus(orderID, merchantOrderID)
 
-		AssertEqual(t, gotResponseData, testdata.OrderStatusResponseData)
+		assert.Equal(t, gotResponseData, testdata.OrderStatusResponseData)
 	})
 
 	t.Run("returns error on unsuccessful request", func(t *testing.T) {
@@ -224,20 +225,4 @@ func TestOrderStatus(t *testing.T) {
 			t.Errorf("got error with type %v want %v", reflect.TypeOf(gotErr), reflect.TypeOf(wantErr))
 		}
 	})
-}
-
-func AssertNoErr(t testing.TB, err error) {
-	t.Helper()
-
-	if err != nil {
-		t.Fatalf("got error %v", err)
-	}
-}
-
-func AssertEqual[T any](t testing.TB, got, want T) {
-	t.Helper()
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v want %v", got, want)
-	}
 }
