@@ -10,109 +10,14 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+
 	"testing"
 
 	"github.com/VitoNaychev/zota-challenge/crypto"
-	"github.com/VitoNaychev/zota-challenge/domain"
 	"github.com/VitoNaychev/zota-challenge/httpclient"
+	"github.com/VitoNaychev/zota-challenge/httpclient/testdata"
 	"github.com/joho/godotenv"
 )
-
-var testOrder = domain.Order{
-	ID:          "QvE8dZshpKhaOmHY",
-	Description: "Test order",
-	Amount:      500.00,
-	Currency:    "USD",
-}
-
-var testCustomer = domain.Customer{
-	Email:       "customer@email-address.com",
-	FirstName:   "John",
-	LastName:    "Doe",
-	Address:     "5/5 Moo 5 Thong Nai Pan Noi Beach, Baan Tai, Koh Phangan",
-	CountryCode: "TH",
-	City:        "Surat Thani",
-	ZipCode:     "84280",
-	Phone:       "+66-77999110",
-	IP:          "103.106.8.104",
-}
-
-var testRequest = httpclient.DepositRequest{
-	MerchantOrderID:          "QvE8dZshpKhaOmHY",
-	MerchantOrderDescription: "Test order",
-	OrderAmount:              500.00,
-	OrderCurrency:            "USD",
-	CustomerEmail:            "customer@email-address.com",
-	CustomerFirstName:        "John",
-	CustomerLastName:         "Doe",
-	CustomerAddress:          "5/5 Moo 5 Thong Nai Pan Noi Beach, Baan Tai, Koh Phangan",
-	CustomerCountryCode:      "TH",
-	CustomerCity:             "Surat Thani",
-	CustomerZipCode:          "84280",
-	CustomerPhone:            "+66-77999110",
-	CustomerIP:               "103.106.8.104",
-	RedirectURL:              "https://www.example-merchant.com/payment-return/",
-	CheckoutURL:              "https://www.example-merchant.com/account/deposit/?uid=QvE8dZshpKhaOmHY",
-}
-
-var testResponseData = httpclient.DepositResponseData{
-	DepositURL:      "https://api.zotapay.com/api/v1/deposit/init/8b3a6b89697e8ac8f45d964bcc90c7ba41764acd/",
-	MerchantOrderID: 12,
-	OrderID:         "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd",
-}
-
-var testSuccessResponse = httpclient.DepositSuccessResponse{
-	Code: 200,
-	Data: testResponseData,
-}
-
-var testErrorResponse = httpclient.DepositErrorResponse{
-	Code:    400,
-	Message: "endpoint currency mismatch",
-}
-
-var testOrderStatusRequest = httpclient.OrderStatusRequest{
-	MerchantID:      "EXAMPLE-MERCHANT-ID",
-	OrderID:         "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd",
-	MerchantOrderID: "QvE8dZshpKhaOmHY",
-	Timestamp:       "1564617600",
-}
-
-var testOrderStatusResponseExtraData = httpclient.OrderStatusResponseExtraData{
-	AmountChanged:     true,
-	AmountRounded:     true,
-	AmountManipulated: false,
-	DCC:               false,
-	OriginalAmount:    "499.98",
-	PaymentMethod:     "INSTANT-BANK-WIRE",
-	SelectedBankCode:  "SCB",
-	SelectedBankName:  "",
-}
-
-var testOrderStatusResponseData = httpclient.OrderStatusResponseData{
-	Type:                   "SALE",
-	Status:                 "PROCESSING",
-	ErrorMessage:           "",
-	EndpointID:             "1050",
-	ProcessorTransactionID: "",
-	OrderID:                "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd",
-	MerchantOrderID:        "QvE8dZshpKhaOmHY",
-	Amount:                 "500.00",
-	Currency:               "THB",
-	CustomerEmail:          "customer@email-address.com",
-	ExtraData:              testOrderStatusResponseExtraData,
-	Request:                testOrderStatusRequest,
-}
-
-var testOrderStatusSuccessResponse = httpclient.OrderStatusSuccessResponse{
-	Code: 200,
-	Data: testOrderStatusResponseData,
-}
-
-var testOrderStatusErrorResponse = httpclient.OrderStatusErrorResponse{
-	Code:    400,
-	Message: "timestamp too old",
-}
 
 type StubHttpClient struct {
 	url         string
@@ -171,14 +76,14 @@ func TestDeposit(t *testing.T) {
 
 	t.Run("signs request", func(t *testing.T) {
 		httpClient := &StubHttpClient{
-			code:     testSuccessResponse.Code,
-			response: testSuccessResponse,
+			code:     testdata.DepositSuccessResponse.Code,
+			response: testdata.DepositSuccessResponse,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
-		depositClient.Deposit(testOrder, testCustomer)
+		depositClient.Deposit(testdata.Order, testdata.Customer)
 
-		signature := crypto.SignDeposit(config.Endpoint, testOrder.ID, testOrder.Amount, testCustomer.Email, config.Secret)
+		signature := crypto.SignDeposit(config.Endpoint, testdata.Order.ID, testdata.Order.Amount, testdata.Customer.Email, config.Secret)
 
 		var gotRequest httpclient.DepositRequest
 		json.NewDecoder(httpClient.data).Decode(&gotRequest)
@@ -189,12 +94,12 @@ func TestDeposit(t *testing.T) {
 		depositURLPath := "/api/v1/deposit/request/" + config.Endpoint
 
 		httpClient := &StubHttpClient{
-			code:     testSuccessResponse.Code,
-			response: testSuccessResponse,
+			code:     testdata.DepositSuccessResponse.Code,
+			response: testdata.DepositSuccessResponse,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
-		depositClient.Deposit(testOrder, testCustomer)
+		depositClient.Deposit(testdata.Order, testdata.Customer)
 
 		AssertEqual(t, httpClient.url, config.BaseURL+depositURLPath)
 		AssertEqual(t, httpClient.contentType, config.ContentType)
@@ -202,35 +107,35 @@ func TestDeposit(t *testing.T) {
 		var gotRequest httpclient.DepositRequest
 		json.NewDecoder(httpClient.data).Decode(&gotRequest)
 
-		signature := crypto.SignDeposit(config.Endpoint, testOrder.ID, testOrder.Amount, testCustomer.Email, config.Secret)
-		testRequest.Signature = signature
+		signature := crypto.SignDeposit(config.Endpoint, testdata.Order.ID, testdata.Order.Amount, testdata.Customer.Email, config.Secret)
+		testdata.Request.Signature = signature
 
-		AssertEqual(t, gotRequest, testRequest)
+		AssertEqual(t, gotRequest, testdata.Request)
 	})
 
 	t.Run("returns error on failure to send request", func(t *testing.T) {})
 
 	t.Run("returns response data on successful request", func(t *testing.T) {
 		httpClient := &StubHttpClient{
-			code:     testSuccessResponse.Code,
-			response: testSuccessResponse,
+			code:     testdata.DepositSuccessResponse.Code,
+			response: testdata.DepositSuccessResponse,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
-		gotResponseData, _ := depositClient.Deposit(testOrder, testCustomer)
+		gotResponseData, _ := depositClient.Deposit(testdata.Order, testdata.Customer)
 
-		AssertEqual(t, gotResponseData, testResponseData)
+		AssertEqual(t, gotResponseData, testdata.DepositResponseData)
 	})
 
 	t.Run("returns error on unsuccessful request", func(t *testing.T) {
 		httpClient := &StubHttpClient{
-			code:     testErrorResponse.Code,
-			response: testErrorResponse,
+			code:     testdata.DepositErrorResponse.Code,
+			response: testdata.DepositErrorResponse,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
 		wantErr := &httpclient.DepositError{}
-		_, gotErr := depositClient.Deposit(testOrder, testCustomer)
+		_, gotErr := depositClient.Deposit(testdata.Order, testdata.Customer)
 
 		if !errors.As(gotErr, &wantErr) {
 			t.Errorf("got error with type %v want %v", reflect.TypeOf(gotErr), reflect.TypeOf(wantErr))
@@ -260,8 +165,8 @@ func TestOrderStatus(t *testing.T) {
 		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
 
 		httpClient := &StubHttpClient{
-			code:     testOrderStatusSuccessResponse.Code,
-			response: testOrderStatusSuccessResponse,
+			code:     testdata.OrderStatusSuccessResponse.Code,
+			response: testdata.OrderStatusSuccessResponse,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
@@ -286,8 +191,8 @@ func TestOrderStatus(t *testing.T) {
 		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
 
 		httpClient := &StubHttpClient{
-			code:     testOrderStatusSuccessResponse.Code,
-			response: testOrderStatusSuccessResponse,
+			code:     testdata.OrderStatusSuccessResponse.Code,
+			response: testdata.OrderStatusSuccessResponse,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
@@ -311,14 +216,14 @@ func TestOrderStatus(t *testing.T) {
 		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
 
 		httpClient := &StubHttpClient{
-			code:     testOrderStatusSuccessResponse.Code,
-			response: testOrderStatusSuccessResponse,
+			code:     testdata.OrderStatusSuccessResponse.Code,
+			response: testdata.OrderStatusSuccessResponse,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
 		gotResponseData, _ := depositClient.OrderStatus(orderID, merchantOrderID)
 
-		AssertEqual(t, gotResponseData, testOrderStatusResponseData)
+		AssertEqual(t, gotResponseData, testdata.OrderStatusResponseData)
 	})
 
 	t.Run("returns error on unsuccessful request", func(t *testing.T) {
@@ -326,8 +231,8 @@ func TestOrderStatus(t *testing.T) {
 		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
 
 		httpClient := &StubHttpClient{
-			code:     testOrderStatusErrorResponse.Code,
-			response: testOrderStatusErrorResponse,
+			code:     testdata.OrderStatusErrorResponse.Code,
+			response: testdata.OrderStatusErrorResponse,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
