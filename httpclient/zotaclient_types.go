@@ -1,6 +1,10 @@
 package httpclient
 
-import "github.com/VitoNaychev/zota-challenge/domain"
+import (
+	"fmt"
+
+	"github.com/VitoNaychev/zota-challenge/domain"
+)
 
 type ZotaClientError struct {
 	msg string
@@ -75,29 +79,29 @@ type DepositErrorResponse struct {
 }
 
 type DepositRequest struct {
-	MerchantOrderID          string  `json:"merchantOrderID"`
-	MerchantOrderDescription string  `json:"merchantOrderDescription"`
-	OrderAmount              float64 `json:"orderAmount"`
-	OrderCurrency            string  `json:"orderCurrency"`
-	CustomerEmail            string  `json:"customerEmail"`
-	CustomerFirstName        string  `json:"customerFirstName"`
-	CustomerLastName         string  `json:"customerLastName"`
-	CustomerAddress          string  `json:"customerAddress"`
-	CustomerCountryCode      string  `json:"customerCountryCode"`
-	CustomerCity             string  `json:"customerCity"`
-	CustomerZipCode          string  `json:"customerZipCode"`
-	CustomerPhone            string  `json:"customerPhone"`
-	CustomerIP               string  `json:"customerIP"`
-	RedirectURL              string  `json:"redirectURL"`
-	CheckoutURL              string  `json:"checkoutURL"`
-	Signature                string  `json:"signature"`
+	MerchantOrderID          string `json:"merchantOrderID"`
+	MerchantOrderDescription string `json:"merchantOrderDesc"`
+	OrderAmount              string `json:"orderAmount"`
+	OrderCurrency            string `json:"orderCurrency"`
+	CustomerEmail            string `json:"customerEmail"`
+	CustomerFirstName        string `json:"customerFirstName"`
+	CustomerLastName         string `json:"customerLastName"`
+	CustomerAddress          string `json:"customerAddress"`
+	CustomerCountryCode      string `json:"customerCountryCode"`
+	CustomerCity             string `json:"customerCity"`
+	CustomerZipCode          string `json:"customerZipCode"`
+	CustomerPhone            string `json:"customerPhone"`
+	CustomerIP               string `json:"customerIP"`
+	RedirectURL              string `json:"redirectURL"`
+	CheckoutURL              string `json:"checkoutURL"`
+	Signature                string `json:"signature"`
 }
 
 func NewDepositRequest(order domain.Order, customer domain.Customer, redirectURL, checkoutURL, signature string) DepositRequest {
 	depositRequest := DepositRequest{
 		MerchantOrderID:          order.ID,
 		MerchantOrderDescription: order.Description,
-		OrderAmount:              order.Amount,
+		OrderAmount:              fmt.Sprintf("%.2f", order.Amount),
 		OrderCurrency:            order.Currency,
 		CustomerEmail:            customer.Email,
 		CustomerFirstName:        customer.FirstName,

@@ -27,7 +27,7 @@ var Customer = domain.Customer{
 var Request = httpclient.DepositRequest{
 	MerchantOrderID:          "QvE8dZshpKhaOmHY",
 	MerchantOrderDescription: "Test order",
-	OrderAmount:              500.00,
+	OrderAmount:              "500.00",
 	OrderCurrency:            "USD",
 	CustomerEmail:            "customer@email-address.com",
 	CustomerFirstName:        "John",
