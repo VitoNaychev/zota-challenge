@@ -66,7 +66,9 @@ func main() {
 				log.Println("Order Status error: ", err)
 				break
 			}
-			if orderStatusResponse.Status == "APPROVED" || orderStatusResponse.Status == "DECLINED" {
+			if orderStatusResponse.Status == "APPROVED" ||
+				orderStatusResponse.Status == "DECLINED" ||
+				orderStatusResponse.Status == "ERROR" {
 				log.Println("Order Status completed successfully, got status: ", orderStatusResponse.Status)
 				break
 			}
