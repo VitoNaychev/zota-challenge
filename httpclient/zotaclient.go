@@ -119,7 +119,7 @@ func (z *ZotaClient) Deposit(order domain.Order, customer domain.Customer) (Depo
 		var depositErrorRespone DepositErrorResponse
 		json.NewDecoder(response.Body).Decode(&depositErrorRespone)
 
-		return DepositResponseData{}, NewDepositError(depositErrorRespone.Message)
+		return DepositResponseData{}, NewZotaClientError(depositErrorRespone.Message)
 	}
 
 	var depositSuccessResponse DepositSuccessResponse
@@ -140,7 +140,7 @@ func (z *ZotaClient) OrderStatus(orderID, merchantOrderID string) (OrderStatusRe
 		var orderStatusErrorResponse OrderStatusErrorResponse
 		json.NewDecoder(response.Body).Decode(&orderStatusErrorResponse)
 
-		return OrderStatusResponseData{}, NewOrderStatusError(orderStatusErrorResponse.Message)
+		return OrderStatusResponseData{}, NewZotaClientError(orderStatusErrorResponse.Message)
 	}
 
 	var orderStatusSuccessResponse OrderStatusSuccessResponse

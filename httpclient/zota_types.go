@@ -2,15 +2,15 @@ package httpclient
 
 import "github.com/VitoNaychev/zota-challenge/domain"
 
-type OrderStatusError struct {
+type ZotaClientError struct {
 	msg string
 }
 
-func NewOrderStatusError(msg string) *OrderStatusError {
-	return &OrderStatusError{msg}
+func NewZotaClientError(msg string) *ZotaClientError {
+	return &ZotaClientError{msg}
 }
 
-func (o *OrderStatusError) Error() string {
+func (o *ZotaClientError) Error() string {
 	return o.msg
 }
 
@@ -56,18 +56,6 @@ type OrderStatusSuccessResponse struct {
 type OrderStatusErrorResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
-}
-
-type DepositError struct {
-	msg string
-}
-
-func NewDepositError(msg string) *DepositError {
-	return &DepositError{msg}
-}
-
-func (d *DepositError) Error() string {
-	return d.msg
 }
 
 type DepositSuccessResponse struct {

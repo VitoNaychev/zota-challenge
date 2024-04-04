@@ -124,7 +124,7 @@ func TestDeposit(t *testing.T) {
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
-		wantErr := &httpclient.DepositError{}
+		wantErr := &httpclient.ZotaClientError{}
 		_, gotErr := depositClient.Deposit(testdata.Order, testdata.Customer)
 
 		if !errors.As(gotErr, &wantErr) {
@@ -217,7 +217,7 @@ func TestOrderStatus(t *testing.T) {
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
 
-		wantErr := &httpclient.OrderStatusError{}
+		wantErr := &httpclient.ZotaClientError{}
 		_, gotErr := depositClient.OrderStatus(orderID, merchantOrderID)
 
 		if !errors.As(gotErr, &wantErr) {
