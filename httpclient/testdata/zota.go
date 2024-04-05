@@ -24,7 +24,7 @@ var Customer = domain.Customer{
 	IP:          "103.106.8.104",
 }
 
-var Request = httpclient.DepositRequest{
+var DepositRequest = httpclient.DepositRequest{
 	MerchantOrderID:          "QvE8dZshpKhaOmHY",
 	MerchantOrderDescription: "Test order",
 	OrderAmount:              "500.00",

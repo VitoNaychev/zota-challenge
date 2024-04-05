@@ -109,9 +109,9 @@ func TestDeposit(t *testing.T) {
 		json.NewDecoder(httpClient.data).Decode(&gotRequest)
 
 		signature := crypto.SignDeposit(config.Endpoint, testdata.Order.ID, testdata.Order.Amount, testdata.Customer.Email, config.Secret)
-		testdata.Request.Signature = signature
+		testdata.DepositRequest.Signature = signature
 
-		assert.Equal(t, gotRequest, testdata.Request)
+		assert.Equal(t, gotRequest, testdata.DepositRequest)
 	})
 
 	t.Run("returns error on failure to send request", func(t *testing.T) {
