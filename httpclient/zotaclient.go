@@ -14,8 +14,8 @@ import (
 	"github.com/VitoNaychev/zota-challenge/domain"
 )
 
-var DEPOSIT_URL = "/api/v1/deposit/request/"
-var ORDER_STATUS_URL = "/api/v1/query/order-status/"
+const depositURL = "/api/v1/deposit/request/"
+const orderStatusURL = "/api/v1/query/order-status/"
 
 type ZotaConfigError struct {
 	msg string
@@ -123,7 +123,7 @@ func (z *ZotaClient) Deposit(order domain.Order, customer domain.Customer) (Depo
 	body := bytes.NewBuffer([]byte{})
 	json.NewEncoder(body).Encode(depositRequest)
 
-	response, err := z.client.Post(z.config.BaseURL+DEPOSIT_URL+z.config.Endpoint, z.config.ContentType, body)
+	response, err := z.client.Post(z.config.BaseURL+depositURL+z.config.Endpoint, z.config.ContentType, body)
 	if err != nil {
 		return DepositResponseData{}, err
 	}
@@ -173,7 +173,7 @@ func formatOrderStatusURL(baseURL, merchantID, orderID, merchantOrderID string, 
 	params.Set("timestamp", fmt.Sprint(timestamp))
 	params.Set("signature", signature)
 
-	urlWithParams := fmt.Sprintf("%s%s?%s", baseURL, ORDER_STATUS_URL, params.Encode())
+	urlWithParams := fmt.Sprintf("%s%s?%s", baseURL, orderStatusURL, params.Encode())
 
 	return urlWithParams
 }
