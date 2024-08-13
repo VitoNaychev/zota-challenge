@@ -1,0 +1,22 @@
+output:
+  format: colored-line-number
+
+linters:
+  enable:
+    - cyclop
+    - goconst
+    - gofmt
+    - goimports
+    - gosec
+    - misspell
+    - revive
+    - unconvert
+    - unparam
+
+    # Optional 
+    - depguard
+    - goerr113
+    - gomnd
+    - nakedret
+    # - rowserrcheck
+    # - sqlclosecheck

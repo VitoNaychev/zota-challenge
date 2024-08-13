@@ -55,10 +55,10 @@ func main() {
 			log.Println("Deposit error: ", err)
 		}
 
-		log.Println("Deposit call sucessfull")
+		log.Println("Deposit call successful")
 		log.Println("\tOrder ID: ", depositResponse.OrderID)
 		log.Println("\tDeposit URL: ", depositResponse.DepositURL)
-		log.Println("Begining order status polling")
+		log.Println("Beginning order status polling")
 
 		for {
 			orderStatusResponse, err := zotaClient.OrderStatus(depositResponse.OrderID, merchantOrderID)

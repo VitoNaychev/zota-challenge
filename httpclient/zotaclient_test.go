@@ -19,7 +19,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type StubHttpClient struct {
+type StubHTTPClient struct {
 	err error
 
 	url         string
@@ -30,7 +30,7 @@ type StubHttpClient struct {
 	response interface{}
 }
 
-func (s *StubHttpClient) Post(url string, contentType string, data io.Reader) (*http.Response, error) {
+func (s *StubHTTPClient) Post(url string, contentType string, data io.Reader) (*http.Response, error) {
 	s.url = url
 	s.contentType = contentType
 	s.data = data
@@ -51,7 +51,7 @@ func (s *StubHttpClient) Post(url string, contentType string, data io.Reader) (*
 
 }
 
-func (s *StubHttpClient) Get(url string) (*http.Response, error) {
+func (s *StubHTTPClient) Get(url string) (*http.Response, error) {
 	s.url = url
 
 	if s.err != nil {
@@ -76,7 +76,7 @@ func TestDeposit(t *testing.T) {
 	assert.NoErr(t, err)
 
 	t.Run("signs request", func(t *testing.T) {
-		httpClient := &StubHttpClient{
+		httpClient := &StubHTTPClient{
 			code:     testdata.DepositSuccessResponse.Code,
 			response: testdata.DepositSuccessResponse,
 		}
@@ -94,7 +94,7 @@ func TestDeposit(t *testing.T) {
 	t.Run("sends request", func(t *testing.T) {
 		depositURLPath := "/api/v1/deposit/request/" + config.Endpoint
 
-		httpClient := &StubHttpClient{
+		httpClient := &StubHTTPClient{
 			code:     testdata.DepositSuccessResponse.Code,
 			response: testdata.DepositSuccessResponse,
 		}
@@ -117,7 +117,7 @@ func TestDeposit(t *testing.T) {
 	t.Run("returns error on failure to send request", func(t *testing.T) {
 		dummyErr := errors.New("dummy error")
 
-		httpClient := &StubHttpClient{
+		httpClient := &StubHTTPClient{
 			err: dummyErr,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
@@ -128,7 +128,7 @@ func TestDeposit(t *testing.T) {
 	})
 
 	t.Run("returns response data on successful request", func(t *testing.T) {
-		httpClient := &StubHttpClient{
+		httpClient := &StubHTTPClient{
 			code:     testdata.DepositSuccessResponse.Code,
 			response: testdata.DepositSuccessResponse,
 		}
@@ -140,7 +140,7 @@ func TestDeposit(t *testing.T) {
 	})
 
 	t.Run("returns error on unsuccessful request", func(t *testing.T) {
-		httpClient := &StubHttpClient{
+		httpClient := &StubHTTPClient{
 			code:     testdata.DepositErrorResponse.Code,
 			response: testdata.DepositErrorResponse,
 		}
@@ -167,7 +167,7 @@ func TestOrderStatus(t *testing.T) {
 		merchantOrderID := "QvE8dZshpKhaOmHY"
 		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
 
-		httpClient := &StubHttpClient{
+		httpClient := &StubHTTPClient{
 			code:     testdata.OrderStatusSuccessResponse.Code,
 			response: testdata.OrderStatusSuccessResponse,
 		}
@@ -193,7 +193,7 @@ func TestOrderStatus(t *testing.T) {
 		merchantOrderID := "QvE8dZshpKhaOmHY"
 		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
 
-		httpClient := &StubHttpClient{
+		httpClient := &StubHTTPClient{
 			code:     testdata.OrderStatusSuccessResponse.Code,
 			response: testdata.OrderStatusSuccessResponse,
 		}
@@ -220,7 +220,7 @@ func TestOrderStatus(t *testing.T) {
 
 		dummyErr := errors.New("dummy error")
 
-		httpClient := &StubHttpClient{
+		httpClient := &StubHTTPClient{
 			err: dummyErr,
 		}
 		depositClient := httpclient.NewZotaClient(config, httpClient)
@@ -234,7 +234,7 @@ func TestOrderStatus(t *testing.T) {
 		merchantOrderID := "QvE8dZshpKhaOmHY"
 		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
 
-		httpClient := &StubHttpClient{
+		httpClient := &StubHTTPClient{
 			code:     testdata.OrderStatusSuccessResponse.Code,
 			response: testdata.OrderStatusSuccessResponse,
 		}
@@ -249,7 +249,7 @@ func TestOrderStatus(t *testing.T) {
 		merchantOrderID := "QvE8dZshpKhaOmHY"
 		orderID := "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
 
-		httpClient := &StubHttpClient{
+		httpClient := &StubHTTPClient{
 			code:     testdata.OrderStatusErrorResponse.Code,
 			response: testdata.OrderStatusErrorResponse,
 		}
